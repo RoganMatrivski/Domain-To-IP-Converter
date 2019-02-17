@@ -64,28 +64,29 @@ namespace DomainToIPConverter
                 Dictionary<string, List<string>> host_group_dict = new Dictionary<string, List<string>>();
 
                 Console.WriteLine(host_group.Key);
-                foreach (var host in host_group.Value)
+                //foreach (var host in host_group.Value)
+                Parallel.ForEach(host_group.Value, host =>
                 {
-                    if (string.IsNullOrWhiteSpace(host))
-                        continue;
-
-                    var ip = "";
-                    try
+                    if (!string.IsNullOrWhiteSpace(host))
                     {
-                        //Dns.GetHostAddresses(host).ToList().ForEach(ip => Console.WriteLine(ip.ToString()));
-                        ip = Dns.GetHostAddresses(host).First().ToString();
-                        Console.WriteLine(ip);
-                    }
-                    catch (System.Net.Sockets.SocketException ex)
-                    {
-                        Console.WriteLine($"Can't find {host}");
-                    }
+                        var ip = "";
+                        try
+                        {
+                            //Dns.GetHostAddresses(host).ToList().ForEach(ip => Console.WriteLine(ip.ToString()));
+                            ip = Dns.GetHostAddresses(host).First().ToString();
+                            Console.WriteLine(ip);
+                        }
+                        catch (System.Net.Sockets.SocketException ex)
+                        {
+                            Console.WriteLine($"Can't find {host}");
+                        }
 
-                    if (host_group_dict.ContainsKey(ip))
-                        host_group_dict[ip].Add(host);
-                    else
-                        host_group_dict.Add(ip, new List<string>() { host });
-                }
+                        if (host_group_dict.ContainsKey(ip))
+                            host_group_dict[ip].Add(host);
+                        else
+                            host_group_dict.Add(ip, new List<string>() { host });
+                    }
+                });
 
                 host_groups.Add(host_group.Key, host_group_dict);
             }
@@ -119,14 +120,15 @@ namespace DomainToIPConverter
 #     Custom hosts by RoganMatrivski
 #=========================================
 
-
 ");
 
             foreach (var original_hosts in File.ReadAllLines(Environment.GetFolderPath(Environment.SpecialFolder.Windows) + @"\System32\drivers\etc\hosts"))
                 if (!string.IsNullOrWhiteSpace(original_hosts) && original_hosts[0] != '#')
                     Console.WriteLine(original_hosts);
 
-            foreach (var hosts_group in host_groups)
+            Console.Write("\n\n");
+
+            foreach (var hosts_group in new SortedDictionary<string, Dictionary<string, List<string>>>(host_groups))
             {
                 Console.WriteLine($"# {hosts_group.Key}");
 
